@@ -1,0 +1,35 @@
+Package: cryptoQuotes
+Title: Access OHLC Market Data from Major Cryptocurrency Exchanges
+Version: 1.0.0
+Authors@R: c(
+    person(
+    "Serkan",
+    "Korkmaz",
+    role = c("cre", "aut", "ctb", "cph"),
+    email = 'serkor1@duck.com',
+    comment = c(ORCID = "0000-0002-5052-0982")
+    )
+  )
+Description: A high level library to extract cryptocurrency OHLC market data from major centralized exchanges.
+  The library supports all available intervals supported by the exchange API for spot and perpetual futures markets.
+License: GPL (>= 2)
+Encoding: UTF-8
+RoxygenNote: 7.2.3
+Suggests: knitr, quantmod, rmarkdown, testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports: curl (>= 5.1.0), httr (>= 1.4.7), jsonlite (>= 1.8.7),
+        lifecycle, magrittr (>= 2.0.3), plotly (>= 4.10.2), rlang (>=
+        1.1.1), TTR, xts (>= 0.13.1), zoo (>= 1.8-12)
+Depends: R (>= 2.10)
+LazyData: true
+VignetteBuilder: knitr
+URL: https://serkor1.github.io/cryptoQuotes/,
+        https://github.com/serkor1/cryptoQuotes
+BugReports: https://github.com/serkor1/cryptoQuotes/issues
+NeedsCompilation: no
+Packaged: 2023-12-12 19:29:37 UTC; serkan
+Author: Serkan Korkmaz [cre, aut, ctb, cph]
+    (<https://orcid.org/0000-0002-5052-0982>)
+Maintainer: Serkan Korkmaz <serkor1@duck.com>
+Repository: CRAN
+Date/Publication: 2023-12-13 12:00:02 UTC
