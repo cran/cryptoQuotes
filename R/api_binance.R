@@ -1,117 +1,10 @@
-# script: scr_binance
-# date: 2023-10-03
+# script: api_binance
+# date: 2023-12-20
 # author: Serkan Korkmaz, serkor1@duck.com
-# objective: These functions
+# objective: Create all necessary parameters
+# for a proper API call
 # script start;
-
-# available intervals in binance;
-binanceIntervals <- function(futures, interval, all = FALSE) {
-
-  # this funtion serves two purposes
-  #
-  # 1) listing all available
-  # intervals
-  #
-  # 2) extracting chosen intervals
-  # for the remainder of this script.
-  #
-  # This step is unnessary for some of
-  # the REST APIs like binance, but it provides
-  # a more streamlined programming structure
-
-  allIntervals <- data.frame(
-    cbind(
-      labels = c(
-        '1s',
-        '1m',
-        '3m',
-        '5m',
-        '15m',
-        '30m',
-        '1h',
-        '2h',
-        '4h',
-        '6h',
-        '8h',
-        '12h',
-        '1d',
-        '3d',
-        '1w',
-        '1M'
-      ),
-      values = c(
-        '1s',
-        '1m',
-        '3m',
-        '5m',
-        '15m',
-        '30m',
-        '1h',
-        '2h',
-        '4h',
-        '6h',
-        '8h',
-        '12h',
-        '1d',
-        '3d',
-        '1w',
-        '1M'
-      )
-    )
-  )
-
-
-  # if all; then this function
-  # has been called by availableIntervals
-  # and will return all available intervals
-
-
-  if (all) {
-
-    interval <- allIntervals$labels
-
-  } else {
-
-    # 1) locate the chosen interval
-    # from the list
-    indicator <- grepl(
-      pattern = paste0('^', interval),
-      ignore.case = FALSE,
-      x = allIntervals$labels
-    )
-
-    # if (sum(indicator) == 0) {
-    #
-    #   rlang::abort(
-    #     message = c(
-    #       paste0(interval, ' were not found.'),
-    #       'v' = paste('Valid intervals:', paste(allIntervals$labels,collapse = ', '))
-    #     ),
-    #     # disable traceback, on this error.
-    #     trace = rlang::trace_back(),
-    #     call = rlang::caller_env(n = 6)
-    #   )
-    #
-    # }
-
-    # 2) extract the interval
-    # from the list
-    interval <- allIntervals[indicator,]$values
-  }
-
-
-  return(
-    interval
-  )
-
-}
-
-
-
-
-
-
-# baseURL;
+# 1) URLs and Endpoint; ####
 binanceUrl <- function(
     futures = TRUE
 ) {
@@ -132,264 +25,200 @@ binanceUrl <- function(
 
 }
 
-
-
-
-# tickers;
-binanceTickers <- function(
-    futures = TRUE
-) {
-
-  # 1) extract endpoint
-  # based on futres
-  endPoint <- base::ifelse(
-    test = futures,
-    yes  = '/fapi/v1/exchangeInfo',
-    no   = '/api/v3/exchangeInfo'
-  )
-
-  # 2) GET response
-  # using baseUrl
-  # and internal endpoint
-  # defined here
-  response <- httr::GET(
-    url = baseUrl(
-      source = 'binance',
-      futures = futures
-    ),
-    path = endPoint
-  )
-
-
-  # 3) parse response
-  response <- jsonlite::fromJSON(
-    txt = httr::content(
-      x        = response,
-      as       = 'text',
-      encoding = 'UTF-8'
-    )
-  )
-
-  # 4) subset by
-  # currently tradable
-  # tickers and extract
-  # the symbols as a character
-  # vector
-  response <- subset(
-    x = response$symbols,
-    grepl(
-      pattern = 'trading',
-      ignore.case = TRUE,
-      x = response$symbols$status
-    )
-  )$symbol
-
-
-  # 5) return the
-  # vector
-  return(
-    response
-  )
-
-}
-
-
-# endpoint
 binanceEndpoint <- function(
-    futures = TRUE
+    type = 'ohlc',
+    futures = TRUE,
+    top = FALSE
 ) {
 
-  # 1) construct endpoint url
-  endPoint <- base::ifelse(
-    test = futures,
-    yes  = '/fapi/v1/continuousKlines',
-    no   = '/api/v3/klines'
+  endPoint <- switch(
+    EXPR = type,
+    ohlc = {
+      if (futures) '/fapi/v1/klines' else '/api/v3/klines'
+    },
+    ticker ={
+      if (futures) '/fapi/v1/exchangeInfo' else '/api/v3/exchangeInfo'
+    },
+    lsratio = {
+      if (top) '/futures/data/topLongShortAccountRatio' else '/futures/data/globalLongShortAccountRatio'
+    }
   )
 
   # 2) return endPoint url
   return(
     endPoint
   )
+
 }
 
-
-
-# parameters;
-binanceParams <- function(
+# 2) Available intervals; #####
+binanceIntervals <- function(
     futures,
-    ticker,
     interval,
-    from = NULL,
-    to   = NULL
+    all = FALSE
+) {
+  # Define all intervals in a data frame
+  allIntervals <- data.frame(
+    labels = c('1s', '1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'),
+    values = c('1s', '1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M')
+  )
+
+  if (all) {
+    return(allIntervals$labels)
+  } else {
+    # Select the specified interval
+    selectedInterval <- allIntervals$values[
+      grepl(paste0('^', interval, '$'), allIntervals$values)
+    ]
+
+    return(selectedInterval)
+  }
+}
+
+# 3) define response object and format; ####
+binanceResponse <- function(
+    type = 'ohlc',
+    futures
 ) {
 
-  # 1) construct baseparametes
-  # conditional on marketEndpoint
-  # ie. wether its futures, or spotmarket
-  if (futures) {
+  # mock response
+  # to avoid check error in
+  # unevaluated expressions
+  response <- NULL
 
-    getParams <- list(
-      pair         = ticker,
-      contractType = 'PERPETUAL',
-      interval     = constructInterval(
-        source = 'binance',
-        futures = futures,
-        interval = interval
+  switch(
+    EXPR = type,
+    ohlc = {
+      list(
+        colum_names = c(
+          'Open',
+          'High',
+          'Low',
+          'Close',
+          'Volume'
+        ),
+        colum_location = c(
+          2:6
+        ),
+        index_location = c(
+          1
+        )
+
       )
+    },
+    ticker = {
+      list(
+        code = rlang::expr(
+          subset(
+            x = response$symbols,
+            grepl(
+              pattern = 'trading',
+              ignore.case = TRUE,
+              x = response$symbols$status
+            )
+          )$symbol
+        )
+      )
+    }
+  )
+
+}
+
+# 4) Dates passed to and from endpoints; ####
+binanceDates <- function(
+    futures,
+    dates,
+    is_response = FALSE
+) {
+
+  multiplier <- 1e3
+
+  if (!is_response) {
+    # Convert dates to numeric and format
+    dates <- convertDate(
+      date = dates,
+      multiplier = multiplier,
+      power = 1
     )
+
+    # Add one day to the second date
+    dates[2] <- dates[2] + 1 * 60 * 60 * 24
+
+    dates <- lapply(dates, format, scientific = FALSE)
+    names(dates) <- c('startTime', 'endTime')
+
+    return(dates)
 
   } else {
-
-    getParams <- list(
-      symbol = ticker,
-      interval = constructInterval(
-        source = 'binance',
-        futures = futures,
-        interval = interval
-      )
+    # Processing response
+    dates <- convertDate(
+      date = as.numeric(dates),
+      multiplier = multiplier,
+      power = -1,
+      is_response = TRUE
     )
-
+    return(dates)
   }
-
-  # 2) add startTime and endTime
-  # on the parameter list if not
-  # null
-  #
-  # NOT: Its all UTC, in a future
-  # update this should be depending on
-  # choice, and user system.
-  if (!is.null(from) & !is.null(to)) {
-
-    getParams$startTime <- format(
-      as.numeric(
-        as.POSIXct(
-          from,
-          tz = 'UTC'
-        )
-      ) * 1e3,
-      scientific = FALSE
-    )
-
-
-
-    getParams$endTime <- format(
-      as.numeric(
-        as.POSIXct(
-          to,
-          tz = 'UTC'
-        )
-      ) * 1e3, scientific = FALSE
-    )
-
-  }
-
-  # 3) return parameters
-  return(
-    getParams
-  )
-
 }
 
-
-# get prices;
-binanceQuote <- function(
-    futures,
-    interval,
+# 5) Parameters passed to endpoints; ####
+binanceParameters <- function(
+    futures = TRUE,
+    type   = 'ohlc',
     ticker,
+    interval,
     from = NULL,
-    to   = NULL
+    to = NULL
 ) {
 
-  # function information
-  #
-  #
-  # This function fetches the
-  # the data
-
-  # 1) GET request
-  response <- httr::GET(
-    url   = baseUrl(
-      source = 'binance',
-      futures = futures
-    ),
-    # NOTE: Cant connect
-    # to Binance with this
-    # httr::use_proxy(
-    #   url = '141.11.158.172',
-    #   port = 8080
-    #   ),
-    path  = endPoint(
-      source = 'binance',
-      futures = futures
-    ),
-    query = getParams(
-      source = 'binance',
-      futures = futures,
-      ticker = ticker,
+  # Basic parameters common to both futures and non-futures
+  params <- list(
+    symbol = ticker,
+    interval = binanceIntervals(
       interval = interval,
+      futures = futures
+    )
+  )
+
+  # Add date parameters
+  date_params <- binanceDates(
+    futures = futures,
+    dates = c(
       from = from,
-      to   = to
-    )
+      to = to
+    ),
+    is_response = FALSE
   )
 
-  # 1.1) Check for error
-  check_for_errors(
-    response = response
-  )
+  if (type == 'lsratio') {
+    # 4.1) This is a standalone
+    # parameter; was called interval
+    # but is named period in the API calls
+    names(params)[2] <- 'period'
 
-  # 2) parse response
-  response <- jsonlite::fromJSON(
-    txt = httr::content(
-      x = response,
-      as = 'text',
-      encoding = 'UTF-8'
-    )
-  )
+    # 4.1) Return only
+    # 100 such that this function
+    # aligns with the remaining
+    # functions which
+    # also returns 100
+    params$limit <- 100
 
-  # 3) format response
-  # accordingly
+  }
 
-  # 3.1) set column
-  # names
-  column_names <- c(
-    'Open',
-    'High',
-    'Low',
-    'Close',
-    'Volume'
-  )
+  # Combine all parameters
+  params <- c(params, date_params)
 
-  # 3.2) format
-  # dates
-  index <- as.POSIXct(
-    as.numeric(response[,1])/1e3,
-    origin = '1970-01-01',
-    tz = 'UTC'
-  )
-
-  # 3.3) extract needed
-  # columns from the response
-  response <- response[,2:6]
-  colnames(response) <- column_names
-
-  # 3.4) convert all values
-  # to numeric
-  response <- apply(
-    response,
-    c(1,2),
-    as.numeric
-  )
-
+  # Return a structured list with additional common parameters
   return(
     list(
-      index = index,
-      quote = response
+      query = params,
+      path = NULL,
+      futures = futures,
+      source = 'binance',
+      ticker = ticker,
+      interval = interval
     )
   )
-
 }
 
-
-
-# script end;
-
+# script end; ####

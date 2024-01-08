@@ -1,112 +1,10 @@
-# script: scr_kraken
-# date: 2023-10-03
+# script: api_kraken
+# date: 2023-12-20
 # author: Serkan Korkmaz, serkor1@duck.com
-# objective: These functions
+# objective: Create all necessary parameters
+# for a proper API call
 # script start;
-
-# available intervals in kraken;
-krakenIntervals <- function(interval, futures, all = FALSE) {
-
-  # this funtion serves two purposes
-  #
-  # 1) listing all available
-  # intervals
-  #
-  # 2) extracting chosen intervals
-  # for the remainder of this script.
-  #
-  # This step is unnessary for some of
-  # the REST APIs like binance, but it provides
-  # a more streamlined programming structure
-
-  if (futures) {
-
-    allIntervals <- data.frame(
-      cbind(
-        labels =  c("1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "1w"),
-        values =  c("1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "1w")
-      )
-
-    )
-
-
-  } else {
-
-    allIntervals <- data.frame(
-      cbind(
-        labels = c("1m","5m","15m", "30m", "1h","4h", "1d", "1w", "2w"),
-        values = c(1   ,5   ,15   ,30    ,60   ,240 , 1440,10080,21600)
-      )
-
-    )
-
-  }
-
-
-
-  # if all; then this function
-  # has been called by availableIntervals
-  # and will return all available intervals
-  if (all) {
-
-    interval <- allIntervals$labels
-
-  } else {
-
-    # 2) locate the interval
-    # using grepl
-    indicator <- grepl(
-      pattern = paste0('^', interval),
-      ignore.case = TRUE,
-      x = allIntervals$labels
-    )
-
-    # if (sum(indicator) == 0) {
-    #
-    #   rlang::abort(
-    #     message = c(
-    #       paste0(interval, ' were not found.'),
-    #       'v' = paste('Valid intervals:', paste(allIntervals$labels,collapse = ', '))
-    #     ),
-    #     # disable traceback, on this error.
-    #     trace = rlang::trace_back(),
-    #     call = rlang::caller_env(n = 6)
-    #   )
-    #
-    # }
-
-    # 3) return interval
-    interval <- allIntervals[indicator,]$values
-
-  }
-
-
-
-
-
-  return(
-    interval
-  )
-
-
-
-
-
-
-
-
-
-
-
-  return(
-    interval
-  )
-
-}
-
-
-
-# baseURL;
+# 1) URLs and Endpoint; ####
 krakenUrl <- function(
     futures = TRUE
 ) {
@@ -127,404 +25,240 @@ krakenUrl <- function(
 
 }
 
-
-
-
-# tickers;
-krakenTickers <- function(
-    futures = TRUE
-) {
-
-  # 1) extract endpoint
-  # based on futres
-  endPoint <- base::ifelse(
-    test = futures,
-    yes  = '/derivatives/api/v3/instruments',
-    no   = '0/public/AssetPairs'
-  )
-
-  # 2) GET response
-  # using baseUrl
-  # and internal endpoint
-  # defined here
-  response <- httr::GET(
-    url = baseUrl(
-      source = 'kraken',
-      futures = futures
-    ),
-    path = endPoint
-  )
-
-  # 3) parse response
-  response <- jsonlite::fromJSON(
-    txt = httr::content(
-      x        = response,
-      as       = 'text',
-      encoding = 'UTF-8'
-    )
-  )
-
-  if (futures) {
-
-    response <- response$instruments
-
-  } else {
-
-    response <- response$result
-
-  }
-
-  # 4) subset by
-  # currently tradable
-  # tickers and extract
-  # the symbols as a character
-  # vector
-  if (futures) {
-
-   response <- subset(
-     response,
-     response$tradeable == 'TRUE'
-   )$symbol
-
-  } else {
-
-    response <- names(lapply(
-      response,
-      function(x) {
-        if (x$status == 'online'){
-          x$altname
-        }
-
-      }
-    ))
-
-  }
-
-
-
-  # 5) return the
-  # vector
-  return(
-    response
-  )
-
-}
-
-
-# endpoint
 krakenEndpoint <- function(
+    type = 'ohlc',
     futures = TRUE
 ) {
 
-  # 1) construct endpoint url
-  endPoint <- base::ifelse(
-    test = futures,
-    yes  = 'api/charts/v1',
-    no   = '0/public/OHLC'
+  endPoint <- switch(
+    EXPR = type,
+    ohlc = {
+      if (futures) 'api/charts/v1' else '0/public/OHLC'
+    },
+    ticker ={
+      if (futures) '/derivatives/api/v3/instruments' else '0/public/AssetPairs'
+    }
   )
+
+
 
   # 2) return endPoint url
   return(
     endPoint
   )
-}
-
-
-
-# parameters;
-krakenParams <- function(
-    futures,
-    ticker,
-    interval,
-    from = NULL,
-    to   = NULL
-) {
-
-  # 1) construct baseparametes
-  # conditional on marketEndpoint
-  # ie. wether its futures, or spotmarket
-  if (futures) {
-
-    getParams <- list(
-      tick_type = 'trade',
-      symbol         = ticker,
-      resolution     = constructInterval(
-        source = 'kraken',
-        futures = futures,
-        interval = interval
-      )
-
-
-    )
-
-  } else {
-
-    getParams <- list(
-      pair = ticker,
-      interval = constructInterval(
-        source = 'kraken',
-        futures = futures,
-        interval = interval
-      )
-    )
-
-  }
-
-  # 2) add startTime and endTime
-  # on the parameter list if not
-  # null
-  #
-  # NOT: Its all UTC, in a future
-  # update this should be depending on
-  # choice, and user system.
-  if (!is.null(from)) {
-
-    getParams$since <- format(
-      as.numeric(
-        as.POSIXct(
-          from,
-          tz = 'UTC'
-        )
-      ),
-      scientific = FALSE
-    )
-
-
-
-    # getParams$to <- format(
-    #   as.numeric(
-    #     as.POSIXct(
-    #       to,
-    #       tz = 'UTC'
-    #     )
-    #   ), scientific = FALSE
-    # )
-
-  }
-
-  # 3) return parameters
-  return(
-    getParams
-  )
 
 }
 
-
-# get prices;
-krakenQuote <- function(
-    futures,
+# 2) Available intervals; #####
+krakenIntervals <- function(
     interval,
-    ticker,
-    from = NULL,
-    to   = NULL
+    futures,
+    all = FALSE
+) {
+  if (futures) {
+    # For futures, labels and values are the same
+    allIntervals <- data.frame(
+      labels = c("1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "1w"),
+      values = c("1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "1w")
+    )
+  } else {
+    # For non-futures, labels and values are different
+    allIntervals <- data.frame(
+      labels = c("1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "2w"),
+      values = c(1   ,5   ,15   ,30    ,60   ,240 , 1440,10080,21600)
+    )
+  }
+
+  if (all) {
+
+    return(allIntervals$labels)
+
+  } else {
+    # Locate and return the chosen interval value
+    matchedInterval <- allIntervals$values[
+      grepl(paste0('^', interval, '$'), allIntervals$labels, ignore.case = TRUE)
+    ]
+
+    return(matchedInterval)
+  }
+}
+
+# 3) define response object and format; ####
+krakenResponse <- function(
+    type = 'ohlc',
+    futures
 ) {
 
-  # function information
-  #
-  #
-  # This function fetches the
-  # the data
-
-  # 1) GET request
-  if (futures) {
-
-    # NOTE: Kraken only returns
-    # the specificed dates
-    if (is.null(from) & is.null(to)) {
-
-      # Determine todays data;
-      # so if nothing is provided
-      # return 1 months worth
-      # of data
-      today <- Sys.Date()
-
-
-      from <- as.numeric(as.POSIXct(seq(today, length.out=2, by="-1 months")[2], tz = 'UTC'))
-      to <- as.numeric(
-        as.POSIXct(
-          today,
-          tz = 'UTC'
-          )
-      )
+  response <- NULL
 
 
 
-    }
-
-    response <- httr::GET(
-      url   = baseUrl(
-        source = 'kraken',
-        futures = TRUE
-      ),
-      # NOTE: Cant connect
-      # to kraken with this
-      # httr::use_proxy(
-      #   url = '141.11.158.172',
-      #   port = 8080
-      #   ),
-      path  = c(endPoint(
-        source = 'kraken',
-        futures = TRUE
-      ),
-      getParams(
-        source = 'kraken',
-        futures = TRUE,
-        ticker = ticker,
-        interval = interval,
-        from = NULL,
-        to   = NULL
-      )
-      ),
-      query = list(
-        from = as.numeric(
-          as.POSIXct(
-            from,
-            tz = 'UTC'
-          )
-        ),
-        to = as.numeric(
-          as.POSIXct(
-            to,
-            tz = 'UTC'
-          )
-        )
-      )
-    )
 
 
-
-  } else {
-
-    response <- httr::GET(
-      url   = baseUrl(
-        source = 'kraken',
-        futures = FALSE
-      ),
-      path  = endPoint(
-        source = 'kraken',
-        futures = FALSE
-      ),
-      query = getParams(
-        source = 'kraken',
-        futures = FALSE,
-        ticker = ticker,
-        interval = interval,
-        from = from,
-        to   = NULL
-      )
-    )
-
-
-  }
-
-  # 1.1) Check for error
-  check_for_errors(
-    response = response
-  )
-
-  # 2) parse response
-  response <- jsonlite::fromJSON(
-    txt = httr::content(
-      x = response,
-      as = 'text',
-      encoding = 'UTF-8'
-    )
-  )
-
-  if (futures) {
-
-    response <- response$candles
-
-  } else {
-
-    response <- response$result[[1]]
-
-
-  }
-
-
-
-  # 3) format response
-  # accordingly
-
-  # 3.1) set column
-  # names
-  column_names <- c(
-    'Open',
-    'High',
-    'Low',
-    'Close',
-    'Volume'
-  )
-
-  # 3.2) format
-  # dates
-  index <- as.POSIXct(
-    as.numeric(response[,1])/ifelse(futures, 1000, 1),
-    origin = '1970-01-01',
-    tz = 'UTC'
-  )
-
-
-  if (futures) {
-
-    idx <- c(2:6)
-
-  } else {
-
-    idx <- c(2:5, 7)
-
-  }
-
-
-
-  # 3.3) extract needed
-  # columns from the response
-  response <- response[,idx]
-  colnames(response) <- column_names
-
-  # 3.4) convert all values
-  # to numeric
-  response <- apply(
-    response,
-    c(1,2),
-    as.numeric
-  )
-
-  # If in the spot market
-  # then Kraken returns 720 pips
-  # which may be outside of the desired
-  # range.
-  if (!futures) {
-
-    if (!is.null(from) & !is.null(to)) {
-
-
-
-      indicator <- index <= as.POSIXct(
-        x = to,
-        tz = 'UTC',
-        origin = '1970-01-01',
-      )
-
-
-
-      index <- index[indicator]
-      response <- response[indicator,]
-
-
-    }
-
-  }
-
-
-  return(
+  # Define the basic structure for OHLC data
+  ohlc_structure <- function(volume_loc = 6) {
     list(
-      index = index,
-      quote = response
+      colum_names = c('Open', 'High', 'Low', 'Close', 'Volume'),
+      colum_location = c(2:5, volume_loc),
+      index_location = 1
     )
+  }
+
+
+  switch(
+    EXPR = type,
+    ohlc = {
+      ohlc_structure(
+        volume_loc = if (!futures) 7 else 6
+      )
+    },
+    ticker = {
+
+      # Non-OHLC data
+      response_code_structure <- function(market) {
+
+        switch (
+          market,
+          'futures' = list(
+            code = rlang::expr(
+              subset(
+                response$instruments,
+                response$instruments$tradeable == 'TRUE'
+              )$symbol
+            )
+          ),
+          'spot'    = list(
+            code = rlang::expr(
+              names(
+                lapply(
+                  response$result,
+                  function(x) {
+                    if (x$status == 'online'){
+                      x$altname
+                    }
+                  }
+                )
+              )
+            )
+          )
+        )
+      }
+
+      return(
+        response_code_structure(
+          market = if (futures) 'futures' else 'spot'
+        )
+      )
+
+    }
   )
 
 }
 
-# # script end;
+# 4) Dates passed to and from endpoints; ####
+krakenDates <- function(
+    futures,
+    dates,
+    is_response = FALSE
+) {
+
+  if (!is_response) {
+    dates <- convertDate(
+      date = dates,
+      is_response = FALSE,
+      multiplier = 1,
+      power = 1
+    )
+
+    if (!futures) {
+      # Adjust for Spot market
+      dates[1] <- dates[1] - 15 * 60
+    }
+
+    dates <- format(x = dates, scientific = FALSE)
+
+    # Set names based on futures
+    names(dates) <- if (futures) c('from', 'to') else c('since', 'to')
+
+    return(dates)
+
+  } else {
+    # Processing response
+    dates <- convertDate(
+      date = as.numeric(dates),
+      multiplier = ifelse(futures, yes = 1000, no = 1),
+      power = -1,
+      is_response = TRUE
+    )
+
+    return(dates)
+  }
+}
+
+
+# 5) Parameters passed to endpoints; ####
+krakenParameters <- function(
+    futures = TRUE,
+    ticker,
+    interval,
+    type = NULL,
+    from = NULL,
+    to = NULL
+) {
+
+  # Set common parameters
+  params <- list(
+    ticker = ticker,
+    interval = krakenIntervals(
+      interval = interval,
+      futures = futures
+    )
+  )
+
+  # Add dates
+  date_params <- krakenDates(
+    futures = futures,
+    dates = c(
+      from = from,
+      to = to
+    ),
+    is_response = FALSE
+  )
+
+
+  # Set specific parameters for futures or non-futures
+  if (futures) {
+    params$symbol = params$ticker
+    params$resolution = params$interval
+    params$tick_type = 'trade'
+    params$from = date_params[1]
+    params$to = date_params[2]
+    params$query = list(
+      from = date_params[1],
+      to =date_params[2]
+    )
+    params$path = list(
+      tick_type = 'trade',
+      symbol = params$symbol,
+      resolution = params$resolution
+    )
+  } else {
+
+    params$pair = params$ticker
+    params$query = list(
+      since = date_params[1],
+      pair = params$pair,
+      interval = params$interval
+    )
+    params$path = NULL
+  }
+
+  # Common parameters for both futures and non-futures
+  params$futures = futures
+  params$source = 'kraken'
+
+  # Return the structured list
+  return(params)
+}
+
+#  # script end;

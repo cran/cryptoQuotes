@@ -1,152 +1,10 @@
-# script: scr_kucoin
-# date: 2023-10-03
+# script: new_api_kucoin
+# date: 2023-12-18
 # author: Serkan Korkmaz, serkor1@duck.com
-# objective:
+# objective: Create all necessary parameters
+# for a proper API call
 # script start;
-
-# available intervals in binance;
-kucoinIntervals <- function(interval, futures, all = FALSE) {
-
-
-  # this funtion serves two purposes
-  #
-  # 1) listing all available
-  # intervals
-  #
-  # 2) extracting chosen intervals
-  # for the remainder of this script.
-  #
-  # This step is unnessary for some of
-  # the REST APIs like binance, but it provides
-  # a more streamlined programming structure
-
-  if (futures) {
-
-    allIntervals <- data.frame(
-      cbind(
-        labels = c(
-          '1m',
-          '5m',
-          '15m',
-          '30m',
-          '1h',
-          '2h',
-          '4h',
-          '8h',
-          '12h',
-          '1d',
-          '1w'
-        ),
-        values = c(
-          1,
-          5,
-          15,
-          30,
-          60,
-          120,
-          240,
-          480,
-          720,
-          1440,
-          10080
-        )
-      )
-
-    )
-
-
-  } else {
-
-    allIntervals <- data.frame(
-      cbind(
-        labels = c(
-          '1m',
-          '3m',
-          '5m',
-          '15m',
-          '30m',
-          '1h',
-          '2h',
-          '4h',
-          '6h',
-          '8h',
-          '12h',
-          '1d',
-          '1w'
-        ),
-        values = c(
-          '1min',
-          '3min',
-          '5min',
-          '15min',
-          '30min',
-          '1hour',
-          '2hour',
-          '4hour',
-          '6hour',
-          '8hour',
-          '12hour',
-          '1day',
-          '1week'
-        )
-      )
-
-    )
-
-  }
-
-  # if all; then this function
-  # has been called by availableIntervals
-  # and will return all available intervals
-  if (all) {
-
-    interval <- allIntervals$labels
-
-  } else {
-
-    # 2) locate the interval
-    # using grepl
-    indicator <- grepl(
-      pattern = paste0('^', interval),
-      ignore.case = TRUE,
-      x = allIntervals$labels
-    )
-
-    # if (sum(indicator) == 0) {
-    #
-    #   rlang::abort(
-    #     message = c(
-    #       paste0(interval, ' were not found.'),
-    #       'v' = paste('Valid intervals:', paste(allIntervals$labels,collapse = ', '))
-    #     ),
-    #     # disable traceback, on this error.
-    #     trace = rlang::trace_back(),
-    #     call = rlang::caller_env(n = 6)
-    #   )
-    #
-    # }
-
-    # 3) return interval
-    interval <- allIntervals[indicator,]$values
-
-  }
-
-
-
-
-
-  return(
-    interval
-  )
-
-
-
-}
-
-
-
-
-# baseURL;
+# 1) URLs and Endpoint; ####
 kucoinUrl <- function(
     futures = TRUE
 ) {
@@ -167,81 +25,23 @@ kucoinUrl <- function(
 
 }
 
-
-
-# tickers;
-kucoinTickers <- function(
-    futures = TRUE
-) {
-
-  # 1) extract endpoint
-  # based on futres
-  endPoint <- base::ifelse(
-    test = futures,
-    yes  = '/api/v1/contracts/active',
-    no   = '/api/v1/market/allTickers'
-  )
-
-  # 2) GET response
-  # using baseUrl
-  # and internal endpoint
-  # defined here
-  response <- httr::GET(
-    url = baseUrl(
-      source = 'kucoin',
-      futures = futures
-    ),
-    path = endPoint
-  )
-
-  # 3) parse response
-  response <- jsonlite::fromJSON(
-    txt = httr::content(
-      x        = response,
-      as       = 'text',
-      encoding = 'UTF-8'
-    )
-  )
-
-  # 4) depending on wether
-  # its futures or not, the
-  # JSON files are returned differently
-  if (futures) {
-    response <- subset(
-      x = response$data,
-      grepl(
-        pattern = 'open',
-        ignore.case = TRUE,
-        x = response$data$status
-      )
-    )$symbol
-  } else {
-    response <- response$data$ticker$symbol
-  }
-
-
-
-  # 5) return the
-  # vector
-  return(
-    response
-  )
-
-}
-
-
-# endpoint
 kucoinEndpoint <- function(
+    type = 'ohlc',
     futures = TRUE
 ) {
 
-  # 1) construct endpoint url
-  endPoint <- base::ifelse(
-    test = futures,
-    yes   =  '/api/v1/kline/query',
-    no    = '/api/v1/market/candles'
 
+  endPoint <- switch(
+    EXPR = type,
+    ohlc = {
+      if (futures) '/api/v1/kline/query' else '/api/v1/market/candles'
+    },
+    ticker ={
+      if (futures) '/api/v1/contracts/active' else '/api/v1/market/allTickers'
+    }
   )
+
+
 
   # 2) return endPoint url
   return(
@@ -249,260 +49,168 @@ kucoinEndpoint <- function(
   )
 }
 
+# 2) Available intervals; #####
+kucoinIntervals <- function(
+    interval,
+    futures,
+    all = FALSE
+) {
+  if (futures) {
+    allIntervals <- data.frame(
+      labels = c('1m', '5m', '15m', '30m', '1h', '2h', '4h', '8h', '12h', '1d', '1w'),
+      values = c(1, 5, 15, 30, 60, 120, 240, 480, 720, 1440, 10080)
+    )
+  } else {
+    allIntervals <- data.frame(
+      labels = c('1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '1w'),
+      values = c('1min', '3min', '5min', '15min', '30min', '1hour', '2hour', '4hour', '6hour', '8hour', '12hour', '1day', '1week')
+    )
+  }
+
+  if (all) {
+    return(allIntervals$labels)
+  } else {
+    # Select the specified interval
+    selectedInterval <- allIntervals$values[
+      grepl(paste0('^', interval, '$'), allIntervals$labels, ignore.case = TRUE)
+    ]
+    return(selectedInterval)
+  }
+}
+
+# 3) define response object and format; ####
+kucoinResponse <- function(
+    type = 'ohlc',
+    futures
+) {
+
+  response <- NULL
+
+  # mock response
+  # to avoid check error in
+  # unevaluated expressions
+  response <- NULL
+
+  switch(
+    EXPR = type,
+    ohlc = {
+      list(
+        colum_names = if (futures) c('Open', 'High', 'Low', 'Close', 'Volume') else c('Open', 'Close', 'High', 'Low', 'Volume'),
+        colum_location = 2:6,
+        index_location = 1
+      )
+    },
+    ticker = {
+
+      if (futures) {
+        list(
+          code = rlang::expr(
+            subset(
+              x = response$data,
+              grepl(pattern = 'open', ignore.case = TRUE, x = response$data$status)
+            )$symbol
+          )
+        )
+      } else {
+        list(
+          code = rlang::expr(response$data$ticker$symbol)
+        )
+      }
+
+    }
+  )
+
+}
+
+# 4) Dates passed to and from endpoints; ####
+kucoinDates <- function(
+    futures,
+    dates,
+    is_response = FALSE
+) {
+
+  multiplier <- if (futures) 1e3 else 1
+
+  if (!is_response) {
+    # Convert dates and format
+
+    dates <- convertDate(
+      date = dates,
+      multiplier = multiplier,
+      power = 1,
+      is_response = FALSE
+    )
+
+    dates <- format(
+      dates,
+      scientific = FALSE
+    )
 
 
-# parameters;
-kucoinParams <- function(
+    if (!futures) {
+      # Adjust for Kucoin spot and set names
+      dates <- as.numeric(dates)
+      dates[2] <- dates[2] + 15 * 60
+      names(dates) <- c('startAt', 'endAt')
+    } else {
+      # Set names for futures
+      names(dates) <- c('from', 'to')
+    }
+
+    return(dates)
+  } else {
+    # Processing response
+    dates <- convertDate(
+      date = as.numeric(dates),
+      multiplier = multiplier,
+      power = -1,
+      is_response = TRUE)
+    return(dates)
+  }
+}
+
+# 5) Parameters passed to endpoints; ####
+kucoinParameters <- function(
     futures = TRUE,
     ticker,
+    type = NULL,
     interval,
     from = NULL,
-    to   = NULL
+    to = NULL
 ) {
 
-  # 1) construct baseparametes
-  # conditional on marketEndpoint
-  # ie. wether its futures, or spotmarket
-  if (futures) {
-
-    getParams <- list(
-      symbol      = ticker,
-      granularity = constructInterval(
-        source = 'kucoin',
-        futures = futures,
-        interval = interval
-      )
-    )
-
-    # 2) add startTime and endTime
-    # on the parameter list if not
-    # null
-    #
-    # NOT: Its all UTC, in a future
-    # update this should be depending on
-    # choice, and user system.
-    if (!is.null(from) & !is.null(to)) {
-
-      getParams$from <- format(
-        as.numeric(
-          as.POSIXct(
-            from,
-            tz = 'UTC',
-            origin = "1970-01-01"
-          )
-        ) * 1e3,
-        scientific = FALSE
-      )
-
-
-
-      getParams$to <-  format(
-        as.numeric(
-          as.POSIXct(
-            to,
-            tz = 'UTC',
-            origin = "1970-01-01"
-          )
-        ) * 1e3,
-        scientific = FALSE
-      )
-
-    }
-
-  } else {
-
-    getParams <- list(
-      symbol = ticker,
-      type = constructInterval(
-        source = 'kucoin',
-        futures = futures,
-        interval = interval
-      )
-    )
-
-    # 2) add startTime and endTime
-    # on the parameter list if not
-    # null
-    #
-    # NOT: Its all UTC, in a future
-    # update this should be depending on
-    # choice, and user system.
-    if (!is.null(from) & !is.null(to)) {
-
-      getParams$startAt <- as.numeric(format(
-        as.numeric(
-          as.POSIXct(
-            from,
-            tz = 'UTC'
-          )
-        ),
-        scientific = FALSE
-      ))
-
-
-
-      getParams$endAt <- as.numeric(format(
-        as.numeric(
-          as.POSIXct(
-            to,
-            tz = 'UTC'
-          )
-        ) , scientific = FALSE
-      ))
-
-    }
-
-  }
-
-
-
-  # 3) return parameters
-  return(
-    getParams
-  )
-
-}
-
-
-
-
-
-# get prices;
-kucoinQuote <- function(
-    futures,
-    interval,
-    ticker,
-    from = NULL,
-    to   = NULL
-) {
-
-  # function information
-  #
-  #
-  # This function fetches the
-  # the data
-
-  # 1) GET request
-  response <- httr::GET(
-    url   = baseUrl(
-      source = 'kucoin',
-      futures = futures
-    ),
-    # NOTE: Cant connect
-    # to Binance with this
-    # httr::use_proxy(
-    #   url = '141.11.158.172',
-    #   port = 8080
-    #   ),
-    path  = endPoint(
-      source = 'kucoin',
-      futures = futures
-    ),
-    query = getParams(
-      source = 'kucoin',
-      futures = futures,
-      ticker = ticker,
+  # Initial parameter setup
+  params <- list(
+    symbol = ticker,
+    interval = kucoinIntervals(
       interval = interval,
-      from = from,
-      to   = to
+      futures = futures
     )
   )
+  # Assign appropriate names based on the futures flag
+  interval_param_name <- if (futures) 'granularity' else 'type'
+  names(params)[2] <- interval_param_name
 
-
-  # 1.1) Check for error
-  check_for_errors(
-    response = response
+  # Add date parameters
+  date_params <- kucoinDates(
+    futures = futures,
+    dates = c(from = from, to = to)
   )
 
+  # Combine all parameters
+  params <- c(params, date_params)
 
-  # # 2) parse response
-  response <- jsonlite::fromJSON(
-    txt = httr::content(
-      x = response,
-      as = 'text',
-      encoding = 'UTF-8'
-    )
-  )$data
-
-  # 3) format response
-  # accordingly
-
-  # 3.1) set column
-  # names
-  if (futures) {
-
-    column_names <- c(
-      'Open',
-      'High',
-      'Low',
-      'Close',
-      'Volume'
-    )
-
-  } else {
-
-    column_names <- c(
-      'Open',
-      'Close',
-      'High',
-      'Low',
-      'Volume'
-    )
-
-  }
-
-  # 3.2) format
-  # dates
-  index <- as.POSIXct(
-    as.numeric(response[,1])/ifelse(futures, yes = 1e3, no = 1),
-    origin = '1970-01-01',
-    tz = 'UTC'
-  )
-
-  if (!futures) {
-
-    # The spot-market
-    # is returned in reverse order
-    # ie. latest data comes first
-    #
-    # this is not compatible with zoo
-    # as of October 3rd, 2023
-
-    # 1) reverse the
-    # respinse as according to the
-    # index
-    response <- response[order(index, decreasing = FALSE),]
-
-    # 2) reverse the index
-    # as well.
-    index <- sort(index, decreasing = FALSE)
-
-  }
-
-  # 3.3) extract needed
-  # columns from the response
-  response <- response[,2:6]
-  colnames(response) <- column_names
-
-  # 3.4) convert all values
-  # to numeric
-  response <- apply(
-    response,
-    c(1,2),
-    as.numeric
-  )
-
+  # Return structured list with additional parameters
   return(
     list(
-      index = index,
-      quote = response
+      query = params,
+      path = NULL,
+      futures = futures,
+      source = 'kucoin',
+      ticker = ticker,
+      interval = interval
     )
   )
-
 }
-
-
-
-
 
 # script end;

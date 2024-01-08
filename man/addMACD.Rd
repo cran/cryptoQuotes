@@ -2,13 +2,12 @@
 % Please edit documentation in R/chart_indicators.R
 \name{addMACD}
 \alias{addMACD}
-\title{Add MACD indicator to the chart}
+\title{Add MACD indicators to the chart}
 \usage{
-addMACD(plot, ...)
+addMACD(chart, ...)
 }
 \arguments{
-\item{plot}{A plotly object of either
-klines or OHLC}
+\item{chart}{a \code{\link[=kline]{kline()}} or \code{\link[=ohlc]{ohlc()}} chart}
 
 \item{...}{See \code{\link[TTR:MACD]{TTR::MACD()}}}
 }
@@ -16,9 +15,10 @@ klines or OHLC}
 Invisbly returns a plotly object.
 }
 \description{
-A short description...
-
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+Traders and investors use the MACD indicator to identify trend changes, potential reversals, and overbought or oversold conditions in the market.
+It is a versatile tool that can be applied to various timeframes and asset classes, making it a valuable part of technical analysis for many traders.
 }
 \examples{
 # script: scr_charting
@@ -55,8 +55,11 @@ chart(
 Other chart indicators: 
 \code{\link{addBBands}()},
 \code{\link{addEvents}()},
+\code{\link{addFGIndex}()},
+\code{\link{addLSRatio}()},
 \code{\link{addMA}()},
 \code{\link{addRSI}()},
-\code{\link{addVolume}()}
+\code{\link{addVolume}()},
+\code{\link{chart}()}
 }
 \concept{chart indicators}

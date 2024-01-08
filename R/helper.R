@@ -4,111 +4,7 @@
 # objective: A class of helper
 # function
 # script start;
-
-# generate data;
-# this data is for the purpose of presenting
-# and error-testing
-generate_data <- function(
-    exchanges = c(
-      'binance',
-      'kucoin'
-      # ,
-      # 'kraken',
-      # 'bitmart'
-    )
-) {
-
-  markets <- c(
-    'spot', 'futures'
-  )
-
-  # NOTE: Had do.call(rbind
-
-  temp <- lapply(
-    seq_along(exchanges),
-    function(x) {
-
-      # determine tickers:
-      # First is SPOT, second is FUTURES
-      if (x == 1) {
-
-        # Binance
-        ticker <- c('ATOMUSDT', 'ATOMUSDT')
-
-      }
-
-      if (x == 2) {
-
-        ticker <- c('ATOM-USDT', 'ATOMUSDTM')
-
-      }
-
-      # if (x == 3) {
-      #
-      #   ticker <- c('ATOMUSDT', 'PF_ATOMUSD')
-      #
-      # }
-
-      # if (x == 4) {
-      #
-      #   ticker <- c('ATOM_USDT', 'ATOMUSDT')
-      #
-      # }
-
-
-      # for each exchange
-      # we collect futures
-      # and spot markets
-      temp <- lapply(
-        seq_along(markets),
-        function(y) {
-
-          message(
-            paste(
-              'ticker:', ticker[y], 'market:', markets[y], 'exchange:', exchanges[x])
-          )
-          Sys.sleep(2)
-
-
-
-          # Collect data
-          quote <- getQuote(
-            ticker   = ticker[y],
-            source   = exchanges[x],
-            futures  = ifelse(markets[y] == 'futures', TRUE, FALSE),
-            interval = '15m',
-            from     = '2023-11-25',
-            to       = '2023-11-28'
-          )
-
-          # quote$exchange <-  x
-          # quote$market   <-  y - 1
-
-
-          return(
-            quote
-          )
-
-
-        }
-      )
-
-      names(temp) <- ticker
-
-      return(temp)
-
-    }
-  )
-
-  names(temp) <- exchanges
-
-  return(
-    temp
-  )
-
-}
-
-
+# converting Quotes to and from data.frames; ####
 toDF <- function(quote) {
 
 
@@ -169,7 +65,7 @@ toQuote <- function(DF) {
   )
 }
 
-
+# Plotly parameters; ####
 vline <- function(
     x = 0,
     col = 'steelblue'
@@ -219,95 +115,47 @@ annotations <- function(
 
 
 
-# check for http errors;
+# Errror checkers; ####
 check_for_errors <- function(
     response,
-    call = rlang::caller_env(n = 3)
+    source,
+    futures = FALSE,
+    call = rlang::caller_env(n = 2)
 ) {
 
-  # 1) check for error;
-  #
-  # If an error code is thrown
-  # or the response includes
-  # an empty list.
-  #
-  # Not all failed API calls returns
-  # a propoer code.
-  error_condition <- httr::http_error(response)
-
-  # 1.1) convert content
-  # and check its content if
-  # the returns a list
-  check_content <- jsonlite::fromJSON(
-    txt = httr::content(
-      response,
-      encoding = 'UTF-8',
-      as = 'text'
-    )
+  # 1) Evaluate error message
+  # based on source and market;
+  error_message <- rlang::eval_bare(
+    get(
+      paste0(
+        source, 'Error'
+      )
+    )(
+      response = response,
+      futures = futures
+    ),
+    env = rlang::caller_env(n = 0)
   )
 
-  if (inherits(check_content, 'list')) {
 
-    no_data_returned <- all(
-      sapply(
-        X = jsonlite::fromJSON(
-          txt = httr::content(
-            response,
-            encoding = 'UTF-8',
-            as = 'text'
-          )
-        ),
-        FUN = function(x) {
-          (
-            inherits(x = x, what = 'character') | !length(x)
-          )
+  # 2) Some APIs dosnt give
+  # an error message;
+  if (length(error_message) == 0) {
 
-
-        }
-      )
-    )
-
-    error_condition <- error_condition | no_data_returned
+    error_message <- 'No error information. Check your arugments - if the error persists, please submit a bugreport!'
 
   }
 
-  if (error_condition) {
+  # 3) Throw an error
+  # on user-side
+  rlang::abort(
+    message = paste(
+      error_message
+    ),
+    call = call
+  )
 
-    # 2) abort remaining
-    # operations and paste
-    # the error message
-    error_message <- jsonlite::fromJSON(
-      txt = httr::content(
-        response,
-        encoding = 'UTF-8',
-        as = 'text'
-      )
-    )
-
-    # 2.1) check for empty
-    # content in the error messages
-    # this is relevant for REST APIs like
-    # KuCoin Futures.
-    idx <- sapply(error_message, function(x){!length(x)})
-    error_message[idx] <- 'No sensible error information.'
-
-    # 2.2) extract a the error
-    # message.
-    #
-    # NOTE: its not possible to
-    # use, say, ['msg'] as the container
-    # for each API varies. So this shotgun approach
-    # is somewhat sensible
-    rlang::abort(
-      message = paste(
-        error_message[[2]]
-      ),
-      call = call
-    )
-  }
 }
-
-
 
 # check for errors
 # in chosen exchange
@@ -332,7 +180,7 @@ check_exchange_validity <- function(
             all_available_exchanges,
             collapse = ', '
           ),
-          'is supported'
+          'is currently supported'
         )
       ),
       call = call
@@ -378,14 +226,154 @@ check_interval_validity <- function(
             )
           )
         ),
-        'v' = all_available_intervals
+        'v' = paste(all_available_intervals, collapse = ', ')
       ),
       call = call
     )
 
   }
 
+}
+
+
+available_interval_ls <- c("5m","15m","30m","1h","2h","4h","6h","12h","1d")
+
+
+check_internet_connection <- function() {
+
+  # 0) check internet connection
+  # before anything
+  if (!curl::has_internet()) {
+
+    rlang::abort(
+      message = 'You are currently not connected to the internet. Try again later.',
+
+      # disable traceback, on this error.
+      trace = rlang::trace_back()
+    )
+
+  }
+
+}
+
+# converting dates; ####
+convertDate <- function(
+    date,
+    is_response = FALSE,
+    multiplier = 1,
+    power = 1
+    ) {
+
+  # This function formats
+  # all passed and returned
+  # date formats
+
+  # 1) Calculate scale
+  # facor; this determines
+  # wether the values should be scaled
+  # according to the unix epoch time
+  scale_factor <- multiplier^power
+
+  # 2) Calculate the actual
+  # values
+  tryCatch(
+    expr = {
+      if (!is_response) {
+        # Convert to POSIXct and then to numeric
+        as.numeric(as.POSIXct(date, tz = 'UTC', origin = "1970-01-01")) * scale_factor
+      } else {
+        # Direct conversion to POSIXct for API response
+        as.POSIXct(date * scale_factor, tz = 'UTC', origin = "1970-01-01")
+      }
+    },
+    error = function(error) {
+      # Unified error message;
+      # as all dates are validated; errors here can only
+      # be bugs.
+      rlang::abort(
+        message = "Error in processing date. Please contact package maintainer, or submit a bugreport.",
+        call = rlang::caller_env(n = 9)
+      )
+    }
+  )
+}
+
+# general helpers; ####
+flatten <- function(x) {
+  if (!inherits(x, "list")) return(list(x))
+  else return(unlist(c(lapply(x, flatten)), recursive = FALSE))
+}
+
+
+# package startup messages; ####
+startup_message <- function(
+    pkgname,
+    pkgversion
+) {
+
+  cli::rule(
+    left = paste(pkgname, cli::col_br_blue(pkgversion)),
+    right = cli::style_hyperlink(
+      text = paste(
+        cli::col_br_blue('release notes')
+        ),
+      url  = 'https://serkor1.github.io/cryptoQuotes/news/index.html'
+
+      )
+  )
+
 
 
 }
+
+
+# validators; ####
+date_validator <- function(
+    from,
+    to
+    ) {
+
+  # This function converts all input
+  # dates to POSIX and checks for errors in the dates
+
+  parse_and_convert_date <- function(date) {
+    if (!is.null(date)){
+      parsed_date <- as.POSIXct(date, format = "%Y-%m-%d %H:%M:%S", tz = 'UTC')
+      if (is.na(parsed_date)) {
+        parsed_date <- as.POSIXct(date, format = "%Y-%m-%d", tz = 'UTC')
+      }
+      if (is.na(parsed_date)) {
+        rlang::abort(
+          message = c(
+            'Error in date formats',
+            'v' = 'Accepted formats:',
+            '*' = as.character(Sys.Date()),
+            '*' = as.character(
+              format(
+                Sys.time()
+              )
+            )
+          ),
+          call = rlang::caller_env(n = 1)
+        )
+      }
+      return(parsed_date)
+    } else {
+      return(NULL)
+    }
+  }
+
+  # Apply the function to both dates
+  from <- parse_and_convert_date(from)
+  to <- parse_and_convert_date(to)
+
+  return(
+    list(
+      from = from,
+      to   = to
+    )
+
+  )
+}
+
 # script end;
