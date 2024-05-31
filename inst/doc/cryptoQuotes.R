@@ -1,115 +1,122 @@
 ## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
-  collapse = FALSE,
-  out.width = "100%",
-  comment = "#>",
-  message = FALSE
+  collapse      = TRUE,
+  comment       = "#>",
+  out.width     = "100%",
+  out.height    = "680",
+  fig.align     = "center"
 )
 
-## ----message=FALSE------------------------------------------------------------
+## ----setup, message = FALSE---------------------------------------------------
 library(cryptoQuotes)
 
-## ----echo=FALSE, out.width="80%", fig.cap="Tweet by Elon Musk - the timezone is CET.",fig.align='center'----
-## include tweet from
-## Elon Musk
-knitr::include_graphics(
-  path = "elonTweet.png"
+## -----------------------------------------------------------------------------
+# show a sample of 
+# the available tickers
+sample(
+  x = available_tickers(
+    source  = "kraken",
+    futures = FALSE
+  ),
+  size = 5
 )
 
 ## -----------------------------------------------------------------------------
-## DOGEUSDT the day
-## of the tweet on the
-## 1m chart
-DOGE <- cryptoQuotes::get_quote(
-  ticker   = 'DOGE-USDT',
-  interval = '1m',
-  source   = 'kucoin',
-  futures  = FALSE,
-  from     = '2022-01-14 07:00:00',
-  to       = '2022-01-14 08:00:00'
+## extract Bitcoin
+## market on the hourly 
+## chart
+BTC <- get_quote(
+  ticker   = "XBTUSDT",
+  source   = "kraken",
+  futures  = FALSE, 
+  interval = "1h"
+)
+
+## ----echo=FALSE---------------------------------------------------------------
+tail(
+ BTC 
 )
 
 ## -----------------------------------------------------------------------------
-## extrat the
-## tweet moment
-tweet_moment <- DOGE["2022-01-14 07:18:00"]
-
-## calculate 
-## rally
-cat(
-  "Doge closed:", round((tweet_moment$close/tweet_moment$open - 1),4) * 100, "%"
+## get available
+## intervals for OHLC
+## on Kraken
+available_intervals(
+  source  = "kraken",
+  type    = "ohlc",
+  futures = FALSE
 )
 
-## ----fig.align='center', out.height=800---------------------------------------
-## chart the
-## price action
-## using klines
-cryptoQuotes::chart(
-  ticker     = DOGE,
-  main       = cryptoQuotes::kline(),
-  sub  = list(
-    cryptoQuotes::volume()
+## -----------------------------------------------------------------------------
+## extract long-short
+## ratio on Bitcoin
+## using the hourly chart
+LS_BTC <- try(
+   get_lsratio(
+    ticker   = "XBTUSDT",
+    source   = "kraken",
+    interval = "1h"
+  )
+)
+
+## -----------------------------------------------------------------------------
+## extract long-short
+## ratio on Bitcoin
+## using the hourly chart
+LS_BTC <- get_lsratio(
+  ticker   = "PF_XBTUSD",
+  source   = "kraken",
+  interval = "1h"
+)
+
+## ----echo=FALSE---------------------------------------------------------------
+tail(
+ LS_BTC 
+)
+
+## -----------------------------------------------------------------------------
+# show a sample of 
+# the available tickers
+sample(
+  x = available_tickers(
+    source  = "kraken",
+    futures = TRUE
+  ),
+  size = 5
+)
+
+## ----fig.alt="cryptocurrency market data with R"------------------------------
+# candlestick chart with
+# volume and Long to Short Ratio
+chart(
+  ticker = BTC,
+  main   = kline(),
+  sub    = list(
+    volume(),
+    lsr(ratio = LS_BTC)
   ),
   options = list(
     dark = FALSE
   )
 )
 
-## -----------------------------------------------------------------------------
-## 1) create event data.frame
-## by subsetting the data
-event_data <- as.data.frame(
-  zoo::coredata(
-    DOGE["2022-01-14 07:18:00"]
-  )
-)
-
-## 1.1) add the index 
-## to the event_data
-event_data$index <- zoo::index(
-  DOGE["2022-01-14 07:18:00"]
-)
-
-# 1.2) add event label
-# to the data
-event_data$event <- 'Elon Musk Tweets'
-
-# 1.3) add color to the
-# event label
-event_data$color <- 'steelblue'
-
-## ----out.height = 800---------------------------------------------------------
-## 1) create event data.frame
-## by subsetting the data
-event_data <- as.data.frame(
-  zoo::coredata(
-    DOGE["2022-01-14 07:18:00"]
-  )
-)
-
-## 1.1) add the index 
-## to the event_data
-event_data$index <- zoo::index(
-  DOGE["2022-01-14 07:18:00"]
-)
-
-# 1.2) add event label
-# to the data
-event_data$event <- 'Elon Musk Tweets'
-
-# 1.3) add color to the
-# event label
-event_data$color <- 'steelblue'
-
-## 1) chart the
-## price action
-## using klines
-cryptoQuotes::chart(
-  ticker     = DOGE,
-  event_data = event_data,
-  main       = cryptoQuotes::kline(),
-  sub  = list(
-    cryptoQuotes::volume()
+## ----fig.alt="cryptocurrency market data with R"------------------------------
+# candlestick chart with
+# volume and Long to Short Ratio
+chart(
+  ticker = BTC,
+  main   = kline(),
+  sub    = list(
+    volume(),
+    lsr(ratio = LS_BTC)
+  ),
+  indicator = list(
+    sma(n = 7),
+    sma(n = 14),
+    sma(n = 21),
+    bollinger_bands(
+      color = "steelblue"
+    )
   ),
   options = list(
     dark = FALSE

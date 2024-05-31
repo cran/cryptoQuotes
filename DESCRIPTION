@@ -1,7 +1,7 @@
 Package: cryptoQuotes
 Title: A Streamlined Access to Cryptocurrency OHLC-V Market Data and
         Sentiment Indicators
-Version: 1.3.0
+Version: 1.3.1
 Authors@R: c(
     person("Serkan", "Korkmaz", , "serkor1@duck.com", role = c("cre", "aut", "ctb", "cph"),
            comment = c(ORCID = "0000-0002-5052-0982")),
@@ -18,9 +18,8 @@ RoxygenNote: 7.3.1
 Suggests: data.table, knitr, quantmod, rmarkdown, testthat (>= 3.0.0),
         tidyverse
 Config/testthat/edition: 3
-Imports: cli (>= 3.6.2), conflicted (>= 1.2.0), curl (>= 5.2.0),
-        jsonlite (>= 1.8.8), lifecycle (>= 1.0.4), paletteer (>=
-        1.6.0), plotly (>= 4.10.4), rlang (>= 1.1.3), TTR (>= 0.24.4),
+Imports: cli (>= 3.6.2), curl (>= 5.2.1), jsonlite (>= 1.8.8),
+        lifecycle (>= 1.0.4), plotly (>= 4.10.4), TTR (>= 0.24.4),
         utils, xts (>= 0.13.2), zoo (>= 1.8-12)
 Depends: R (>= 4.0.0)
 LazyData: true
@@ -29,10 +28,10 @@ URL: https://serkor1.github.io/cryptoQuotes/,
         https://github.com/serkor1/cryptoQuotes
 BugReports: https://github.com/serkor1/cryptoQuotes/issues
 NeedsCompilation: no
-Packaged: 2024-03-12 13:27:36 UTC; serko
+Packaged: 2024-05-31 20:46:37 UTC; serkan
 Author: Serkan Korkmaz [cre, aut, ctb, cph]
     (<https://orcid.org/0000-0002-5052-0982>),
   Jonas Cuzulan Hirani [ctb] (<https://orcid.org/0000-0002-9512-1993>)
 Maintainer: Serkan Korkmaz <serkor1@duck.com>
 Repository: CRAN
-Date/Publication: 2024-03-12 15:50:10 UTC
+Date/Publication: 2024-05-31 21:32:50 UTC
