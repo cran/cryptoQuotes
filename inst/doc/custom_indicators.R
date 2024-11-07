@@ -2,6 +2,7 @@
 knitr::opts_chunk$set(
   collapse   = TRUE,
   message    = FALSE,
+  warning    = FALSE,
   comment    = "#>",
   out.width  = "100%",
   out.height = "620px" 
@@ -11,306 +12,133 @@ knitr::opts_chunk$set(
 library(cryptoQuotes)
 
 ## -----------------------------------------------------------------------------
-chart(
-  ticker    = BTC,
-  main      = kline(),
-  sub       = list(
-    macd()
+# 1) create a simple chart
+# object
+# 
+# NOTE: The chart is wrapped in
+# plotly::layout() to avoid
+# duplicating xaxis when the
+# custom indicators are added
+chart_object <- plotly::layout(
+  chart(
+    ticker = BTC,
+    main   = kline(),
+    sub    = list(
+      volume()
     ),
-  indicator = list(
-    bollinger_bands()
-  ) 
-)
-
-## ----echo=FALSE---------------------------------------------------------------
-bollinger_bands
-
-## ----echo=FALSE---------------------------------------------------------------
-macd
-
-## -----------------------------------------------------------------------------
-tail(
-  TTR::DonchianChannel(
-    HL = BTC[,c("high", "low")]
-  )
-)
-
-## -----------------------------------------------------------------------------
-## define custom TA
-## donchian_channel
-donchian_channel <- function(
-    ## these arguments are the
-    ## available arguments in the TTR::DonchianChannel
-    ## function
-    n = 10,
-    include.lag = FALSE,
-    ## the ellipsis
-    ## is needed to interact with
-    ## the chart-function
-    ...
-) {
-  
-  structure(
-    .Data = {
-      
-      ## 1) define args
-      ## as a list from the ellipsis
-      ## which is how the chart-function
-      ## communicates with the indicators
-      args <- list(
-        ...
-      )
-      
-      ## 2) define the data, which in this
-      ## case is the indicator. The indicator
-      ## function streamlines the data so it works
-      ## with plotly
-      data <- cryptoQuotes:::indicator(
-        ## this is just the ticker
-        ## that is passed into the chart-function
-        x = args$data,
-        
-        ## columns are the columns of the ohlc
-        ## which the indicator is calculated on
-        columns = c("high", "low"),
-        
-        ## the function itself 
-        ## can be a custom function
-        ## too.
-        .f = TTR::DonchianChannel,
-        
-        ## all other arguments
-        ## passed into .f
-        n = n,
-        include.lag = FALSE
-      )
-      
-      ## each layer represents
-      ## each output from the indicator
-      ## in this case we have
-      ## high, mid and low.
-      ## 
-      ## The lists represents a plotly-function
-      ## and its associated parameters.
-      layers <- list(
-        ## high
-        list(
-          type = "add_lines",
-          params = list(
-            showlegend = FALSE,
-            legendgroup = "DC",
-            name = "high",
-            inherit = FALSE,
-            data = data,
-            x    = ~index,
-            y    = ~high,
-            line = list(
-              color = "#d38b68",
-              width = 0.9
-            )
-          )
-        ),
-        
-        ## mid
-        list(
-          type = "add_lines",
-          params = list(
-            showlegend = FALSE,
-            legendgroup = "DC",
-            name = "mid",
-            inherit = FALSE,
-            data = data,
-            x    = ~index,
-            y    = ~mid,
-            line = list(
-              color = "#d38b68",
-              dash ='dot',
-              width = 0.9
-            )
-          )
-        ),
-        
-        ## low
-        list(
-          type = "add_lines",
-          params = list(
-            showlegend = FALSE,
-            legendgroup = "DC",
-            name = "low",
-            inherit = FALSE,
-            data = data,
-            x    = ~index,
-            y    = ~low,
-            line = list(
-              color = "#d38b68",
-              width = 0.9
-            )
-          )
-        )
-      )
-      
-      ## we can add ribbons
-      ## to the main plot to give
-      ## it a more structured look.
-      plot <- plotly::add_ribbons(
-        showlegend = TRUE,
-        legendgroup = 'DC',
-        p = args$plot,
-        inherit = FALSE,
-        x = ~index,
-        ymin = ~low,
-        ymax = ~high,
-        data = data,
-        fillcolor = cryptoQuotes:::as_rgb(alpha = 0.1, hex_color = "#d38b68"),
-        line = list(
-          color = "transparent"
-        ),
-        name = paste0("DC(", paste(c(n), collapse = ", "), ")")
-      )
-      
-      ## the plot has to be build
-      ## using the cryptoQuotes::build-function
-      invisible(
-        cryptoQuotes:::build(
-          plot,
-          layers = layers
-        )
-      )
-      
-    }
-  )
-  
-}
-
-## -----------------------------------------------------------------------------
-chart(
-  ticker = BTC,
-  main   = kline(),
-  sub    = list(
-    volume()
+    options = list(
+      dark = FALSE
+    )
   ),
-  indicator = list(
-    bollinger_bands(),
-    donchian_channel()
+  xaxis = list(
+    showticklabels = FALSE
   )
 )
 
 ## -----------------------------------------------------------------------------
-tail(
-  TTR::CCI(
-    HLC = BTC[,c("high", "low", "close")]
-  )
+# 1) generate sin-indicator
+sin_indicator <- data.frame(
+    index         = zoo::index(BTC),
+    sin_indicator = sin(seq(0,8*pi,length.out=nrow(BTC)))
+  
 )
 
 ## -----------------------------------------------------------------------------
-## define custom TA
-## Commodity Channel Index (CCI)
-cc_index <- function(
-    ## these arguments are the
-    ## available arguments in the TTR::CCI
-    ## function
-    n = 20,
-    maType,
-    c = 0.015,
-    ## the ellipsis
-    ## is needed to interact with
-    ## the chart-function
-    ...
-) {
-  
-  structure(
-    .Data = {
-      
-      ## 1) define args
-      ## as a list from the ellipsis
-      ## which is how the chart-function
-      ## communicates with the indicators
-      args <- list(
-        ...
-      )
-      
-      ## 2) define the data, which in this
-      ## case is the indicator. The indicator
-      ## function streamlines the data so it works
-      ## with plotly
-      data <- cryptoQuotes:::indicator(
-        ## this is just the ticker
-        ## that is passed into the chart-function
-        x = args$data,
-        
-        ## columns are the columns of the ohlc
-        ## which the indicator is calculated on
-        columns = c("high", "low", "close"),
-        
-        ## the function itself 
-        ## can be a custom function
-        ## too.
-        .f = TTR::CCI,
-        
-        ## all other arguments
-        ## passed into .f
-        n = n,
-        maType = maType,
-        c      = c
-      )
-      
-      
-      layer <- list(
-        list(
-          type = "plot_ly",
-          params = list(
-            name = paste0("CCI(", n,")"),
-            data = data,
-            showlegend = TRUE,
-            x = ~index,
-            y = ~cci,
-            type = "scatter",
-            mode = "lines",
-            line = list(
-              color = cryptoQuotes:::as_rgb(alpha = 1, hex_color = "#d38b68"),
-              width = 0.9
-            )
-          )
-          
-        )
-      )
-      
-      cryptoQuotes:::build(
-        plot = args$plot,
-        layers = layer,
-        annotations = list(
-          list(
-            text = "Commodity Channel Index",
-            x = 0,
-            y = 1,
-            font = list(
-              size = 18
-            ),
-            xref = 'paper',
-            yref = 'paper',
-            showarrow = FALSE
-          )
-        )
-      )
-      
-      
-      
-    }
-  )
-  
-}
-
-## -----------------------------------------------------------------------------
-chart(
-  ticker = BTC,
-  main   = kline(),
-  sub    = list(
-    volume(),
-    cc_index()
+# 1) create a plotly-object
+# with the sin-indicator
+sin_indicator <- plotly::layout(
+   margin= list(l = 5, r = 5, b = 5),
+  p = plotly::plot_ly(
+    data = sin_indicator,
+    y    = ~sin_indicator,
+    x    = ~index,
+    type = "scatter",
+    mode = "lines",
+    name = "sin"
   ),
-  indicator = list(
-    bollinger_bands(),
-    donchian_channel()
+  yaxis = list(
+    title = NA
+  ),
+  xaxis = list(
+    title = NA
+  )
+)
+# 2) display the 
+# indicator
+sin_indicator
+
+## -----------------------------------------------------------------------------
+# 1) append the sin_indicator
+# to the chart object
+chart_object <- plotly::subplot(
+  # ensures that plots are 
+  # vertically aligned
+  nrows = 2,
+  heights = c(
+    0.7,
+    0.2
+  ),
+  chart_object,
+  sin_indicator,
+  shareX = FALSE,
+  titleY = FALSE
+)
+
+# 2) display the chart
+# object
+chart_object
+
+## -----------------------------------------------------------------------------
+# 1) linear regression
+# line
+lm_indicator <- data.frame(
+  y = fitted(
+    lm(
+      close ~ time,
+      data = data.frame(
+        time = 1:nrow(BTC),
+        close = BTC$close
+      )
+    )
+  ),
+  index = zoo::index(BTC)
+)
+
+## -----------------------------------------------------------------------------
+# 1) display the linear
+# regression line on
+# an empty chart
+plotly::add_lines(
+  p    = plotly::plotly_empty(),
+  data = lm_indicator,
+  y    = ~y,
+  x    = ~index,
+  inherit = FALSE,
+  xaxis = "x1",
+  yaxis = "y2",
+  name  = "regression"
+)
+
+## -----------------------------------------------------------------------------
+# 1) add the regression
+# line to the chart_object
+plotly::layout(
+  margin = list(l = 5, r = 5, b = 5, t = 65),
+  plotly::add_lines(
+    p       = chart_object,
+    data    = lm_indicator,
+    y       = ~y,
+    x       = ~index,
+    inherit = FALSE,
+    xaxis   = "x1",
+    yaxis   = "y2",
+    name    = "regression"
+  ),
+  yaxis = list(
+    title = NA
+  ),
+  xaxis = list(
+    title = NA
   )
 )
 
