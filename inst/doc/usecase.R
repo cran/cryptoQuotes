@@ -19,17 +19,17 @@ knitr::include_graphics(
 )
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  ## DOGEUSDT the day
-#  ## of the tweet on the
-#  ## 1m chart
-#  DOGE <- cryptoQuotes::get_quote(
-#    ticker   = 'DOGE-USDT',
-#    interval = '1m',
-#    source   = 'kucoin',
-#    futures  = FALSE,
-#    from     = '2022-01-14 07:00:00',
-#    to       = '2022-01-14 08:00:00'
-#  )
+# ## DOGEUSDT the day
+# ## of the tweet on the
+# ## 1m chart
+# DOGE <- cryptoQuotes::get_quote(
+#   ticker   = 'DOGE-USDT',
+#   interval = '1m',
+#   source   = 'kucoin',
+#   futures  = FALSE,
+#   from     = '2022-01-14 07:00:00',
+#   to       = '2022-01-14 08:00:00'
+# )
 
 ## -----------------------------------------------------------------------------
 ## extrat the
