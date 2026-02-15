@@ -225,7 +225,7 @@ binanceResponse <- function(
     interest = {
       list(
         colum_names = "open_interest",
-        index_location = 4,
+        index_location = 5,
         colum_location = 2
       )
     },

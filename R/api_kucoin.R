@@ -200,6 +200,7 @@ kucoinDates <- function(
 
       dates[2] <- dates[2] + 15 * 60
       names(dates) <- c('startAt', 'endAt')
+
     } else {
       # Set names for futures
       names(dates) <- c('from', 'to')
@@ -253,11 +254,11 @@ kucoinParameters <- function(
   # Return structured list with additional parameters
   return(
     list(
-      query = params,
-      path = NULL,
-      futures = futures,
-      source = 'kucoin',
-      ticker = ticker,
+      query    = params,
+      path     = NULL,
+      futures  = futures,
+      source   = 'kucoin',
+      ticker   = ticker,
       interval = interval
     )
   )

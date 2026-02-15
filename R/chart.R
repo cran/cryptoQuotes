@@ -317,6 +317,7 @@ chart <- function(
         1
       }
     )
+
   )
 
   scatter_indices <- which(

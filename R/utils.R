@@ -368,6 +368,8 @@ fetch <- function(
     )
   )
 
+
+
   # 3.1.3) convert dates
   # to positxct
   index <- get(

@@ -75,13 +75,13 @@ available_tickers <- function(
   # to ticker-information
   response <- GET(
     url = baseUrl(
-      source = source,
+      source  = source,
       futures = futures
     ),
     endpoint = endPoint(
-      source = source,
+      source  = source,
       futures = futures,
-      type = 'ticker'
+      type    = 'ticker'
     )
   )
 
@@ -93,7 +93,7 @@ available_tickers <- function(
       'Response'
     )
   )(
-    type = 'ticker',
+    type    = 'ticker',
     futures = futures
   )
 

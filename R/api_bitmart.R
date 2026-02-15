@@ -145,6 +145,7 @@ bitmartResponse <- function(
         colum_location = c(2:5, 7),
         index_location = 1
       )
+
     }
   } else {
     list(

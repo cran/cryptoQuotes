@@ -19,12 +19,12 @@ tail(
 ```
 
     #>                        marketcap       volume
-    #> 2025-09-10 18:30:00 3.925924e+12 155988438695
-    #> 2025-09-11 18:30:00 3.959336e+12 150816389732
-    #> 2025-09-12 18:30:00 4.054511e+12 155898890914
-    #> 2025-09-13 18:30:00 4.056984e+12 165083519485
-    #> 2025-09-14 18:30:00 4.039659e+12 126641714950
-    #> 2025-09-15 18:30:00 3.988109e+12 168459812603
+    #> 2026-01-31 22:15:00 2.638013e+12 174620475855
+    #> 2026-02-01 22:15:00 2.610109e+12 131569299731
+    #> 2026-02-02 22:15:00 2.649726e+12 213047787315
+    #> 2026-02-03 22:15:00 2.570898e+12 165843309387
+    #> 2026-02-04 22:15:00 2.449463e+12 162971002109
+    #> 2026-02-05 22:15:00 2.183401e+12 264076715964
 
 ## Bugfixes
 
@@ -92,7 +92,7 @@ chart(
 )
 ```
 
-<img src="man/figures/NEWS-unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/NEWS-unnamed-chunk-3-1.png" alt="" style="display: block; margin: auto;" />
 </details>
 <details>
 <summary>
@@ -116,7 +116,7 @@ chart(
 )
 ```
 
-<img src="man/figures/NEWS-unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/NEWS-unnamed-chunk-4-1.png" alt="" style="display: block; margin: auto;" />
 </details>
 
 ### Supported Exchanges (Issue [\#14](https://github.com/serkor1/cryptoQuotes/issues/14))
@@ -197,7 +197,7 @@ chart(
 )
 ```
 
-<img src="man/figures/NEWS-unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/NEWS-unnamed-chunk-5-1.png" alt="" style="display: block; margin: auto;" />
 </details>
 
 ### Expanded Support
@@ -220,12 +220,12 @@ tail(
 ```
 
     #>                     open_interest
-    #> 2025-09-15 15:00:00      2758.929
-    #> 2025-09-15 16:00:00      2756.115
-    #> 2025-09-15 17:00:00      2757.801
-    #> 2025-09-15 18:00:00      2763.799
-    #> 2025-09-15 19:00:00      2763.216
-    #> 2025-09-15 20:00:00      2768.271
+    #> 2026-02-06 18:00:00      1804.811
+    #> 2026-02-06 19:00:00      1720.164
+    #> 2026-02-06 20:00:00      1704.200
+    #> 2026-02-06 21:00:00      1717.264
+    #> 2026-02-06 22:00:00      1697.977
+    #> 2026-02-06 23:00:00      1693.890
 
 </details>
 
@@ -263,7 +263,7 @@ chart(
 )
 ```
 
-<img src="man/figures/NEWS-unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/NEWS-unnamed-chunk-7-1.png" alt="" style="display: block; margin: auto;" />
 </details>
 
 ### Documentation
@@ -378,7 +378,7 @@ chart(
 )
 ```
 
-<img src="man/figures/NEWS-unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="man/figures/NEWS-unnamed-chunk-8-1.png" alt="" style="display: block; margin: auto;" />
 
 ### Exchange Support
 
@@ -407,12 +407,12 @@ tail(
 ```
 
     #>                     funding_rate
-    #> 2025-09-14 02:00:00    8.182e-05
-    #> 2025-09-14 10:00:00    4.780e-05
-    #> 2025-09-14 18:00:00    3.115e-05
-    #> 2025-09-15 02:00:00    6.207e-05
-    #> 2025-09-15 10:00:00    8.259e-05
-    #> 2025-09-15 18:00:00    8.189e-05
+    #> 2026-02-05 01:00:00   0.00009173
+    #> 2026-02-05 09:00:00   0.00000298
+    #> 2026-02-05 17:00:00  -0.00004957
+    #> 2026-02-06 01:00:00  -0.00001597
+    #> 2026-02-06 09:00:00  -0.00013688
+    #> 2026-02-06 17:00:00  -0.00013478
 
 </details>
 
